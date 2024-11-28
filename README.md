@@ -1,7 +1,7 @@
-## Reinforcement Learning in Logic Synthesis
+# Reinforcement Learning in Logic Synthesis
 
-# Introduction
+## Introduction
 
-# Problem statement
+## Problem statement
 
-# Dataset
+## Dataset
