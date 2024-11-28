@@ -1,2 +1,7 @@
-# reinforcement_learning_in_logic_synthesis
-Training a RL model to produce synthesis recipes for logic optimization.
+## Reinforcement Learning in Logic Synthesis
+
+# Introduction
+
+# Problem statement
+
+# Dataset
