@@ -125,7 +125,7 @@ class NaiveEnv(object):
     def num_actions(self):
         return 5
 
-    def state_dim(self):
+    def state_dimensions(self):
         return 4 + self.num_actions() * 1 + 1
 
     def returns(self):

@@ -132,7 +132,7 @@ class GraphEnv(object):
     def num_actions(self):
         return 5
 
-    def state_dim(self):
+    def state_dimensions(self):
         return 4 + self.num_actions() * 1 + 1
 
     def returns(self):
@@ -141,7 +141,7 @@ class GraphEnv(object):
     def state_value(self, state):
         return float(state.lev) / float(self.init_levels)
 
-    def cure_state_value(self):
+    def curr_state_value(self):
         return self.state_value(self._curr_state)
 
     def seed(self, sd):

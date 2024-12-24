@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from torch import nn
-import torch.nn.functional as F
+from torch.nn.functional import softmax
 from torch.distributions import Categorical
 import bisect
 import random
@@ -14,33 +14,33 @@ from models.fully_connected_graph import *
 
 class PiApprox(object):
 
-    def __init__(self, dimStates, numActs, alpha, network):
+    def __init__(self, state_dimensions, num_actions, learning_rate, network):
 
-        self._dimStates = dimStates
-        self._numActs = numActs
-        self._alpha = alpha
-        self._network = network(dimStates, numActs)
-        self._optimizer = torch.optim.Adam(self._network.parameters(), alpha, [0.9, 0.999])
+        self._state_dimensions = state_dimensions
+        self._num_actions = num_actions
+        self._learning_rate = learning_rate
+        self._network = network(state_dimensions, num_actions)
+        self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
         self.tau = 0.5
 
-    def __call__(self, s, data, phaseTrain=True):
+    def __call__(self, s, data, in_training = True):
         self._network.eval()
         out = self._network(s, data)
-        probs = F.softmax(out, dim=-1)
+        probabilities = softmax(out, dim=-1)
 
-        if phaseTrain:
-            m = Categorical(probs)
+        if in_training:
+            m = Categorical(probabilities)
             action = m.sample()
         else:
             action = torch.argmax(out)
 
         return action.data.item()
 
-    def update(self, s, data, a, gammaT, delta):
+    def update(self, s, data, a, gamma_t, delta):
         self._network.train()
         prob = self._network(s, data)
-        logProb = torch.log_softmax(prob, dim=-1)
-        loss = -gammaT * delta * logProb
+        log_prob = torch.log_softmax(prob, dim=-1)
+        loss = -gamma_t * delta * log_prob
 
         self._optimizer.zero_grad()
         loss[a].backward()
@@ -64,12 +64,12 @@ class Baseline(object):
 
 class BaselineVApprox(object):
 
-    def __init__(self, dimStates, alpha, network):
+    def __init__(self, state_dimensions, learning_rate, network):
 
-        self._dimStates = dimStates
-        self._alpha = alpha
-        self._network = network(dimStates, 1)
-        self._optimizer = torch.optim.Adam(self._network.parameters(), alpha, [0.9, 0.999])
+        self._state_dimensions = state_dimensions
+        self._learning_rate = learning_rate
+        self._network = network(state_dimensions, 1)
+        self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
 
     def __call__(self, state):
         self._network.eval()
@@ -98,64 +98,62 @@ class Trajectory(object):
     def __lt__(self, other):
         return self.value < other.value
 
-
+#reinforcement algorithm
 class Reinforce(object):
     def __init__(self, env, gamma, pi, baseline):
         self._env = env
         self._gamma = gamma
         self._pi = pi
         self._baseline = baseline
-        self.memTrajectory = []
-        self.memLength = 4
-        self.sumRewards = []
+        self.trajectory_memory = []
+        self.memory_length = 4
+        self.sum_rewards = []
 
-    def genTrajectory(self, phaseTrain=True):
+    def generate_trajectory(self, in_training=True):
         self._env.reset()
         state = self._env.state()
         term = False
         states, rewards, actions = [], [0], []
         while not term:
-            action = self._pi(state[0], state[1], phaseTrain)
-            term = self._env.takeAction(action)
-            nextState = self._env.state()
-            nextReward = self._env.reward()
+            action = self._pi(state[0], state[1], in_training)
+            term = self._env.take_action(action)
+            next_state = self._env.state()
+            next_reward = self._env.reward()
             states.append(state)
-            rewards.append(nextReward)
+            rewards.append(next_reward)
             actions.append(action)
-            state = nextState
+            state = next_state
             if len(states) > 20:
                 term = True
-        return Trajectory(states, rewards, actions, self._env.curStatsValue())
+        return Trajectory(states, rewards, actions, self._env.curr_state_value())
 
-    def episode(self, phaseTrain=True):
-        trajectory = self.genTrajectory(phaseTrain=phaseTrain)
-        self.updateTrajectory(trajectory, phaseTrain)
+    def episode(self, in_training=True):
+        trajectory = self.generate_trajectory(in_training=in_training)
+        self.update_trajectory(trajectory, in_training)
         self._pi.episode()
         return self._env.returns()
 
-    def updateTrajectory(self, trajectory, phaseTrain=True):
+    def update_trajectory(self, trajectory, in_training=True):
         states = trajectory.states
         rewards = trajectory.rewards
         actions = trajectory.actions
-        bisect.insort(self.memTrajectory, trajectory)
-        self.lenSeq = len(states)
-        for tIdx in range(self.lenSeq):
-            G = sum(self._gamma ** (k - tIdx - 1) * rewards[k] for k in range(tIdx + 1, self.lenSeq + 1))
-            state = states[tIdx]
-            action = actions[tIdx]
+        bisect.insort(self.trajectory_memory, trajectory)
+        self.seq_len = len(states)
+        for t_idx in range(self.seq_len):
+            G = sum(self._gamma ** (k - t_idx - 1) * rewards[k] for k in range(t_idx + 1, self.seq_len + 1))
+            state = states[t_idx]
+            action = actions[t_idx]
             baseline = self._baseline(state[0])
             delta = G - baseline
             self._baseline.update(state[0], G)
-            self._pi.update(state[0], state[1], action, self._gamma ** tIdx, delta)
-        self.sumRewards.append(sum(rewards))
+            self._pi.update(state[0], state[1], action, self._gamma ** t_idx, delta)
+        self.sum_rewards.append(sum(rewards))
         print(sum(rewards))
 
     def replay(self):
-        for idx in range(min(self.memLength, int(len(self.memTrajectory) / 10))):
-            if len(self.memTrajectory) / 10 < 1:
+        for idx in range(min(self.memory_length, int(len(self.trajectory_memory) / 10))):
+            if len(self.trajectory_memory) / 10 < 1:
                 return
-            upper = min(len(self.memTrajectory) / 10, 30)
+            upper = min(len(self.trajectory_memory) / 10, 30)
             r1 = random.randint(0, upper)
-            self.updateTrajectory(self.memTrajectory[idx])
-
-
+            self.update_trajectory(self.trajectory_memory[idx])

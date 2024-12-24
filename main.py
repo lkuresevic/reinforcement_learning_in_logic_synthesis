@@ -33,29 +33,32 @@ def test_reinforce(filename, benchmark):
     env = graph_env(filename)
         
     #vApprox = Linear(env.dimState(), env.numActions())
-    val_approx = rf.PiApprox(env.state_dimensions(), env.num_actions(), 8e-4, rf.FcModelGraph)
+    val_approx = rf.PiApprox(env.state_dimensions(), env.num_actions(), 8e-4, rf.FullyConnectedGraph)
     baseline = rf.Baseline(0)
-    vbaseline = rf.BaselineVApprox(env.dimState(), 3e-3, rf.FcModel)
-    reinforce = rf.Reinforce(env, 0.9, vApprox, vbaseline)
+    val_baseline = rf.BaselineVApprox(env.state_dimensions(), 3e-3, rf.FullyConnected)
+    reinforce = rf.Reinforce(env, 0.9, val_approx, val_baseline)
 
     lastfive = []
 
     for idx in range(200):
-        returns = reinforce.episode(phaseTrain=True)
-        seqLen = reinforce.lenSeq
-        line = "iter " + str(idx) + " returns "+ str(returns) + " seq Length " + str(seqLen) + "\n"
+        returns = reinforce.episode(in_training=True)
+        seq_len = reinforce.seq_len
+        line = "iter " + str(idx) + " returns "+ str(returns) + " seq Length " + str(seq_len) + "\n"
         if idx >= 195:
             lastfive.append(AbcReturn(returns))
         print(line)
         #reinforce.replay()
-    resultName = "./results/" + ben + ".csv"
+    result_name = "./results/" + benchmark + ".csv"
     #lastfive.sort(key=lambda x : x.level)
     lastfive = sorted(lastfive)
-    with open(resultName, 'a') as andLog:
+    with open(result_name, 'a') as and_log:
         line = ""
-        line += str(lastfive[0].numNodes)
+        line += str(lastfive[0].num_nodes)
         line += " "
         line += str(lastfive[0].level)
         line += "\n"
-        andLog.write(line)
-    rewards = reinforce.sumRewards
+        and_log.write(line)
+    rewards = reinforce.sum_rewards
+
+if __name__ == "__main__":
+    #test_reinforce("./bench/MCNC/Combinational/blif/dalu.blif", "dalu")
