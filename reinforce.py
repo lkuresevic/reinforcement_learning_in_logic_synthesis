@@ -19,7 +19,7 @@ class PiApprox(object):
         self._state_dimensions = state_dimensions
         self._num_actions = num_actions
         self._learning_rate = learning_rate
-        self._network = network(state_dimensions, num_actions)
+        self._network = network(state_dimensions, 128, num_actions)
         self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
         self.tau = 0.5
 
@@ -68,7 +68,7 @@ class BaselineVApprox(object):
 
         self._state_dimensions = state_dimensions
         self._learning_rate = learning_rate
-        self._network = network(state_dimensions, 1)
+        self._network = network(state_dimensions, 128, 1)
         self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
 
     def __call__(self, state):
@@ -148,12 +148,12 @@ class Reinforce(object):
             self._baseline.update(state[0], G)
             self._pi.update(state[0], state[1], action, self._gamma ** t_idx, delta)
         self.sum_rewards.append(sum(rewards))
-        print(sum(rewards))
+        print("Rewards: " + str(sum(rewards)))
 
     def replay(self):
         for idx in range(min(self.memory_length, int(len(self.trajectory_memory) / 10))):
             if len(self.trajectory_memory) / 10 < 1:
                 return
-            upper = min(len(self.trajectory_memory) / 10, 30)
+            upper = int(min(len(self.trajectory_memory) / 10, 30))
             r1 = random.randint(0, upper)
             self.update_trajectory(self.trajectory_memory[idx])

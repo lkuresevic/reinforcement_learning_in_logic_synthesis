@@ -1,18 +1,20 @@
 import torch
-from torch_geometric.nn import GCNConv, global_mean_pool
+from torch_geometric.nn import GraphConv, global_mean_pool
+from torch_geometric.data import Data
 
 class GCN(torch.nn.Module):
-    def __init__(self, input_features, hidden_features, output_length):
+    def __init__(self, input_features, hidden_features, output_features):
         super(GCN, self).__init__()
-        self.graph_conv_1 = GCNConv(input_features, hidden_features)
-        self.graph_conv_2 = GCNConv(hidden_features, hidden_features)
-        self.graph_conv_3 = GCNConv(hidden_features, hidden_features)
-        self.graph_conv_4 = GCNConv(hidden_features, output_length)
+        
+        self.graph_conv_1 = GraphConv(input_features, hidden_features)
+        self.graph_conv_2 = GraphConv(hidden_features, hidden_features)
+        self.graph_conv_3 = GraphConv(hidden_features, hidden_features)
+        self.graph_conv_4 = GraphConv(hidden_features, output_features)
 
     def forward(self, data):
         # `data` is expected to be a PyTorch Geometric Data object
         x, edge_index, batch = data.x, data.edge_index, data.batch
-
+        
         # Apply graph convolutions with ReLU activations
         x = self.graph_conv_1(x, edge_index)
         x = torch.relu(x)
