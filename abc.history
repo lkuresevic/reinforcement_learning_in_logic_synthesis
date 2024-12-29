@@ -1,0 +1,2 @@
+read ../vtr_test/vtr_verilog_to_routing/vtr_flow/benchmarks/blif/alu4.blif
+strash

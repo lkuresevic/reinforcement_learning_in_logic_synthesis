@@ -17,10 +17,10 @@ class GraphEnv(object):
         self._abc.start()
         
         #read input AIG file
-        self._abc.read(self.aigfile)
+        self._abc.read(self._aigfile)
         
         #initial AIG statistics
-        init_stats = self.abc.aigStats()
+        init_stats = self._abc.aigStats()
         self.init_numAnd = float(_init_stats.numAnd)
         self.init_levels = float(_init_stats.lev)
 

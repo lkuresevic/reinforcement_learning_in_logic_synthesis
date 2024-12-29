@@ -1,7 +1,8 @@
-from gcn import GCN
-from fully_connected import *
 import torch
 import torch.nn as nn
+
+from models.gcn import *
+from models.fully_connected import *
 
 class FullyConnectedGraph(nn.Module):
     def __init__(self, input_features, hidden_features, output_features):

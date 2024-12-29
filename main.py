@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 
 import reinforce as rf
-from graph_env import graph_env
+from reinforcement_environments.graph_env import *
 
 import numpy as np
 import statistics
@@ -30,9 +30,9 @@ def test_reinforce(filename, benchmark):
     print("Time: ", date_time)
     
     #initialize the reinforcement learning environment
-    env = graph_env(filename)
+    env = GraphEnv(filename)
         
-    #vApprox = Linear(env.dimState(), env.numActions())
+    #vApprox = Linear(env.dimState(), ennumActions())
     val_approx = rf.PiApprox(env.state_dimensions(), env.num_actions(), 8e-4, rf.FullyConnectedGraph)
     baseline = rf.Baseline(0)
     val_baseline = rf.BaselineVApprox(env.state_dimensions(), 3e-3, rf.FullyConnected)
@@ -61,4 +61,4 @@ def test_reinforce(filename, benchmark):
     rewards = reinforce.sum_rewards
 
 if __name__ == "__main__":
-    #test_reinforce("./bench/MCNC/Combinational/blif/dalu.blif", "dalu")
+    test_reinforce("../vtr_test/vtr_verilog_to_routing/vtr_flow/benchmarks/blif/alu4.blif", "dalu")
