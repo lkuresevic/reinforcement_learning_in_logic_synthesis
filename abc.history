@@ -5,10 +5,10 @@ read ./benchmarks/C1355.blif
 read ./benchmarks/c8.blif
 read ./benchmarks/C17.blif
 read ./benchmarks/C6288.blif
+rewrite -z 
 read ./benchmarks/C2670.blif
 strash
-rewrite
-rewrite -z 
-refactor -z 
-balance
 refactor
+balance
+refactor -z 
+rewrite

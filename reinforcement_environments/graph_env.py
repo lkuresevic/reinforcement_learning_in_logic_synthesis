@@ -25,14 +25,16 @@ class GraphEnv(object):
         _init_stats = self._abc.aigStats()
         self.init_numAnd = float(_init_stats.numAnd)
         self.init_levels = float(_init_stats.lev)
-
-        self.resyn2()  # Run a compress2rs as target
-        self.resyn2()
+        
+        
+        self.resyn2()  
+                
         resyn2_stats = self._abc.aigStats()
-
+        self.reset()
+        print(f"init_states: {_init_stats.numAnd} -- resyn2_stats: {resyn2_stats.numAnd} -- {self._abc.aigStats().numAnd}")
         total_reward = self.state_value(_init_stats) - self.state_value(resyn2_stats)
-        self._reward_baseline = total_reward / 20.0  # 18 is the length of compress2rs sequence
-        print("Baseline number of nodes: ", resyn2_stats.numAnd, "\nBaseline graph depth", resyn2_stats.lev, "\nTotal reward: ", total_reward)
+        self._reward_baseline = total_reward / 10.0  # 18 is the length of compress2rs sequence
+        print("Baseline number of nodes: ", resyn2_stats.numAnd, "\nBaseline graph depth: ", resyn2_stats.lev, "\nTotal reward: ", total_reward)
 
     def resyn2(self):
         self._abc.balance(l=False)
@@ -128,7 +130,7 @@ class GraphEnv(object):
     def reward(self):
         if self.prev_action_1 == 5:  # terminal
             return 0
-        return self.state_value(self._prev_stats) - self.state_value(self._curr_stats) - self._reward_baseline
+        return self.state_value(self._prev_stats) - self.state_value(self._curr_stats)
 
     def num_actions(self):
         return 5
@@ -140,7 +142,7 @@ class GraphEnv(object):
         return [self._curr_stats.numAnd, self._curr_stats.lev]
 
     def state_value(self, state):
-        return float(state.lev) / float(self.init_levels)
+        return float(state.numAnd) / float(self.init_numAnd)
 
     def curr_state_value(self):
         return self.state_value(self._curr_stats)

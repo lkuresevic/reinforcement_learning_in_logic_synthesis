@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 
 import reinforce as rf
+import functions as func
 from reinforcement_environments.graph_env import *
 
 import numpy as np
@@ -33,21 +34,28 @@ def test_reinforce(filename, benchmark):
     env = GraphEnv(filename)
         
     #vApprox = Linear(env.dimState(), ennumActions())
-    val_approx = rf.PiApprox(env.state_dimensions(), env.num_actions(), 1e-5, rf.FullyConnectedGraph)
-    baseline = rf.Baseline(0)
-    val_baseline = rf.BaselineVApprox(env.state_dimensions(), 1e-5, rf.FullyConnected)
-    reinforce = rf.Reinforce(env, 0.8, val_approx, val_baseline)
+    val_approx = func.PiApprox(env.state_dimensions(), env.num_actions(), 1e-3, rf.FullyConnectedGraph)
+    baseline = func.Baseline(0)
+    val_baseline = func.BaselineVApprox(env.state_dimensions(), 1e-3, rf.FullyConnected)
+    reinforce = rf.Reinforce(env, 0.9, val_approx, val_baseline)
 
     lastfive = []
+    
+    #state validity debug
+    
 
     for idx in range(200):
-        returns = reinforce.episode(in_training=True)
+        returns = reinforce.episode(state_dictionary, in_training=True)
         seq_len = reinforce.seq_len
-        line = "Iteration: " + str(idx) + "\n[num_nodes, depth_of_graph]: "+ str(returns) + "\nSequence length: " + str(seq_len) + "\n"
+        print("Iteration: " + str(idx) + 
+              "\n[num_nodes, depth_of_graph]: " + str(returns) + 
+              "\nSequence length: " + str(seq_len) + 
+              "\nState dimensions: " + str(env.state_dimensions()) + 
+              "\n")
         if idx >= 195:
             lastfive.append(AbcReturn(returns))
-        print(line)
-    reinforce.replay()
+        #reinforce.replay()
+    
     result_name = "./results/" + benchmark + ".csv"
     #lastfive.sort(key=lambda x : x.level)
     lastfive = sorted(lastfive)
@@ -59,8 +67,10 @@ def test_reinforce(filename, benchmark):
         line += "\n"
         and_log.write(line)
     rewards = reinforce.sum_rewards
-
+    
 if __name__ == "__main__":
+    state_dictionary = {}
     test_reinforce("./benchmarks/C17.blif", "dalu")
     test_reinforce("./benchmarks/C6288.blif", "dalu")
     test_reinforce("./benchmarks/C2670.blif", "dalu")
+    print(sorted(state_dictionary.values()))

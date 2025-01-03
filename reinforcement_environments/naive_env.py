@@ -30,7 +30,7 @@ class NaiveEnv(object):
         resyn2_stats = self._abc.aigStats()
 
         total_reward = self.stat_value(init_stats) - self.stat_value(resyn2_stats)
-        self._reward_baseline = total_reward / 20.0  # 18 is the length of compress2rs sequence
+        self._reward_baseline = total_reward / 18.0  # 18 is the length of compress2rs sequence
         print("baseline num AND ", resyn2_stats.numAnd, " total reward ", total_reward)
 
     def resyn2(self):
@@ -120,7 +120,7 @@ class NaiveEnv(object):
     def reward(self):
         if self.prev_action_1 == 5:  # Terminal
             return 0
-        return self.state_value(self._prev_stats) - self.statValue(self._curr_stats) - self._reward_baseline
+        return self.state_value(self._prev_stats) - self.state_value(self._curr_stats)
 
     def num_actions(self):
         return 5
@@ -134,8 +134,6 @@ class NaiveEnv(object):
     def state_value(self, state):
         return float(state.numAnd) / float(self.init_numAnd)
 
-    def curr_stateValue(self):
-        return self.state_value(self._curr_stats)
 
     def seed(self, sd):
         pass
