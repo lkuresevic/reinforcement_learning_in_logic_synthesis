@@ -17,11 +17,10 @@ from reinforce import *
 class PiApprox(object):
     
     # Initializes an object that is essentialy a neural network model
-    def __init__(self, state_dimensions, num_actions, learning_rate, network):
-        self._state_dimensions = state_dimensions
+    def __init__(self, num_actions, learning_rate, network):
         self._num_actions = num_actions
         self._learning_rate = learning_rate
-        self._network = network(state_dimensions, 128, num_actions)
+        self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
         self.tau = 0.5
     
@@ -31,55 +30,45 @@ class PiApprox(object):
         out = self._network(s, data)
         probabilities = softmax(out, dim=-1)
         
-        print(probabilities)            
+        #print(probabilities)            
         
         if in_training:
             m = Categorical(probabilities)
             action = m.sample()
         else:
             action = torch.argmax(out)
-        
-        print(action)
+            print(action)
+            print(probabilities)
+
         return action.data.item()
     
     # Updates the network parameters based on the gradient of the policy objective
-    def update(self, s, data, a, gamma_t, delta):
+    def update(self, state_data, graph_data, action, gamma_t, delta):
         self._network.train()
-        prob = self._network(s, data)
-        loss = -gamma_t * delta * torch.log_softmax(prob, dim=-1)
 
+        # Forward pass to get action probabilities
+        prob = self._network(state_data, graph_data)
+        log_prob = torch.log_softmax(prob, dim=-1)
+
+        # Compute loss as per REINFORCE
+        loss = -gamma_t * delta * log_prob[action]
+
+        # Backpropagation
         self._optimizer.zero_grad()
-        loss[a].backward()
+        loss.backward()
         self._optimizer.step()
 
 #    def episode(self):
 #        pass
 
 
-# Class represents a baseline used for variance reduction in the policy gradient
-class Baseline(object):
-    
-    # Initializes a baseline value
-    def __init__(self, b):
-        self.b = b
-    
-    # Returns the baseline value
-    def __call__(self, s):
-        return self.b
-    
-    # Updates the baseline using the recieved return G
-    def update(self, s, G): 
-        pass
-
 # Value function approximation class (a learned baseline); approximates the value of states using a neural network
-class BaselineVApprox(object):
+class VApprox(object):
     
     # Initializes the baseline approximator by setting up a neural network with state dimensions as input and the value of the state as output
-    def __init__(self, state_dimensions, learning_rate, network):
-
-        self._state_dimensions = state_dimensions
+    def __init__(self, learning_rate, network):
         self._learning_rate = learning_rate
-        self._network = network(state_dimensions, 128, 1)
+        self._network = network
         self._optimizer = torch.optim.Adam(self._network.parameters(), learning_rate, [0.9, 0.999])
 
     # Returns the estimated value of a given state by passing it through the network

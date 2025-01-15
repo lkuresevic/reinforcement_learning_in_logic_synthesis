@@ -30,12 +30,12 @@ class Trajectory(object):
 # Class representing the REINFORCE algorithm (a Monte Carlo policy gradient method)
 class Reinforce(object):
     
-    # Initializes the environment (env), discount factor (gamma), policy (pi) and baseline, as well as trajectory_memory
-    def __init__(self, env, gamma, pi, baseline):
+    # Initializes the environment (env), discount factor (gamma), policy (pi) and value, as well as trajectory_memory
+    def __init__(self, env, gamma, pi, value):
         self._env = env
         self._gamma = gamma
         self._pi = pi
-        self._baseline = baseline
+        self._value = value
         self.trajectory_memory = []
         self.memory_length = 4
         self.sum_rewards = []
@@ -47,9 +47,9 @@ class Reinforce(object):
         term = False
         states, rewards, actions = [], [0], []
 
+        state[1].x = torch.cat((state[1].x, (state[0] * state[1].x.shape[0]).unsqueeze(0)), dim=0)
         while not term:
-            action = self._pi(state[0], state[1], in_training)
-            #print(f"action = {action}")
+            action = self._pi(state[0], state[1], in_training)          
             
             if str(state) in state_dictionary:
                 state_dictionary[str(state)] += 1
@@ -63,41 +63,47 @@ class Reinforce(object):
             rewards.append(next_reward)
             actions.append(action)
             state = next_state
-            if len(states) > 10:
+            if len(states) == 10:
                 term = True
         
         return Trajectory(states, rewards, actions, self._env.curr_state_value())
     
-    # Generates an episode and updates the policy and baseline using the collected trajectory
+    # Generates an episode and updates the policy and value using the collected trajectory
     def episode(self, state_dictionary, in_training=True):
         trajectory = self.generate_trajectory(state_dictionary, in_training=in_training)
-        self.update_policy_and_baseline(trajectory, in_training)
+        self.update_policy_and_value(trajectory, in_training)
         return self._env.returns()
     
-    # Updates the policy and baseline based on the trajectory
-    def update_policy_and_baseline(self, trajectory, in_training=True):
+    # Updates the policy and value based on the trajectory
+    def update_policy_and_value(self, trajectory, in_training=True):
         states = trajectory.states
         rewards = trajectory.rewards
         actions = trajectory.actions
         bisect.insort(self.trajectory_memory, trajectory)
         self.seq_len = len(states)
-        for t_idx in range(self.seq_len):
-            G = sum(self._gamma ** (k - t_idx - 1) * rewards[k] for k in range(t_idx + 1, self.seq_len + 1))
+        for t_idx in range(self.seq_len):   
+#            G = sum(rewards[k] for k in range(t_idx + 1, self.seq_len + 1))
+            G = rewards[t_idx+1]
+#            print("G: ", G)
             state = states[t_idx]
             action = actions[t_idx]
-            baseline = self._baseline(state[0])
-            print(f"{t_idx}: {G}, {baseline}")
-            delta = G - baseline
-            self._baseline.update(state[0], G)
+            value = self._env._reward_baseline
+            
+#            print(G, value)            
+            #print(f"{t_idx}: {G}, {value}")
+            delta = G - value
+            
+            print("G: ", G, " Value: ", value, " Delta: ", delta)
+#            self._value.update(state[0], G)
             self._pi.update(state[0], state[1], action, self._gamma ** t_idx, delta)
         self.sum_rewards.append(sum(rewards))
-        print("Rewards: " + str(sum(rewards)))
+#        print("Rewards: " + str(sum(rewards)))
     
-    # Replays a batch of stored trajectories from trajectory_memory, updating the policy and baseline based on these experiences
+    # Replays a batch of stored trajectories from trajectory_memory, updating the policy and value based on these experiences
     def replay(self):
         for idx in range(min(self.memory_length, int(len(self.trajectory_memory) / 10))):
             if len(self.trajectory_memory) / 10 < 1:
                 return
             upper = int(min(len(self.trajectory_memory) / 10, 30))
             r1 = random.randint(0, upper)
-            self.update_policy_and_baseline(self.trajectory_memory[idx])
+            self.update_policy_and_value(self.trajectory_memory[idx])

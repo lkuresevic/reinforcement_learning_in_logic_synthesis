@@ -3,12 +3,35 @@ read ./benchmarks/alu4.blif
 read ./benchmarks/elliptic.blif
 read ./benchmarks/C1355.blif
 read ./benchmarks/c8.blif
-read ./benchmarks/C17.blif
 read ./benchmarks/C6288.blif
-rewrite -z 
 read ./benchmarks/C2670.blif
+read ./benchmarks/i10.aig
+read ./benchmarks/C17.blif
+read ./benchmarks/C499.blif
+read ./benchmarks/i10.aig
+read ./benchmarks/C880
+read ./benchmarks/C499.blif
+read ./benchmarks/7552.blif
+read ./benchmarks/C432.blif
+read ./benchmarks/C880.blif
+read ./benchmarks/C7552.blif
+read ./benchmarks/C3540.blif
+read ./benchmarks/C6288.blif
+read ./benchmarks/C5315.blif
+read ./benchmarks/C2670.blif
+read ./benchmarks/C432.blif
+read ./benchmarks/C880.blif
+read ./benchmarks/C7552.blif
+read ./benchmarks/C3540.blif
+read ./benchmarks/C2670.blif
+read ./benchmarks/C5315.blif
+read ./benchmarks/C6288.blif
+read ./benchmarks/C880.blif
+read ./benchmarks/C499.blif
+read ./benchmarks/C432.blif
 strash
 refactor
 balance
 refactor -z 
+rewrite -z 
 rewrite
